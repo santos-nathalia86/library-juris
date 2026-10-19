@@ -519,6 +519,10 @@ code {
   gap: 1.5rem;
   margin-top: 1.5rem;
 
+  &:has(> :only-child) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   @media (max-width: 1000px) {
     grid-template-columns: 1fr;
   }

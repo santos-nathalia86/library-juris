@@ -17,11 +17,12 @@ export const routes: Routes = [
     title: 'Citações — JurisFind',
     loadComponent: () => import('./pages/citations').then((m) => m.CitationsPage),
   },
-  {
-    path: 'biblioteca',
-    title: 'Meus Documentos — JurisFind',
-    loadComponent: () => import('./pages/library').then((m) => m.LibraryPage),
-  },
+  // Meus Documentos desativado temporariamente; /biblioteca cai no redirecionamento para o início.
+  // {
+  //   path: 'biblioteca',
+  //   title: 'Meus Documentos — JurisFind',
+  //   loadComponent: () => import('./pages/library').then((m) => m.LibraryPage),
+  // },
   {
     path: 'biblioteca/:id',
     title: 'Dados do livro — JurisFind',

@@ -69,7 +69,8 @@ export class App {
     { path: '/jurisprudencia', label: 'Jurisprudência', icon: 'scale' },
     { path: '/legislacao', label: 'Legislação', icon: 'book' },
     { path: '/livros-online', label: 'Livros e Doutrina', icon: 'library' },
-    { path: '/biblioteca', label: 'Meus Documentos', icon: 'file' },
+    // Meus Documentos desativado temporariamente.
+    // { path: '/biblioteca', label: 'Meus Documentos', icon: 'file' },
     { path: '/citacoes', label: 'Citações', icon: 'quote' },
     { path: '/historico', label: 'Histórico', icon: 'clock' },
   ];

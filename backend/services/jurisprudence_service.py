@@ -15,8 +15,8 @@ import httpx
 from models.legal import LegalItem, LegalSearchResponse, ManualLink
 from services.http_client import describe_error
 
-TST_URL = "https://jurisprudencia-backend2.tst.jus.br/rest/pesquisa-textual/{start}/{size}"
-TST_DOCUMENT_URL = "https://jurisprudencia-backend2.tst.jus.br/rest/documentos/{id}"
+TST_URL = "https://jurisprudencia-backend.tst.jus.br/rest/pesquisa-textual/{start}/{size}"
+TST_DOCUMENT_URL = "https://jurisprudencia-backend.tst.jus.br/rest/documentos/{id}"
 DATAJUD_URL = "https://api-publica.datajud.cnj.jus.br/api_publica_{court}/_search"
 COURT_PATTERN = r"^(stj|tst|tse|stm|trf[1-6]|tj[a-z]{2,4}|trt(?:[1-9]|1\d|2[0-4]))$"
 PAGE_SIZE = 20

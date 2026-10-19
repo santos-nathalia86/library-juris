@@ -167,7 +167,7 @@ export class BookDetailPage implements OnInit {
     const book = this.book();
     if (!book || !confirm(`Excluir "${book.title ?? book.original_filename}" e o PDF armazenado?`)) return;
     this.api.deleteBook(book.id).subscribe({
-      next: () => this.router.navigate(['/biblioteca']),
+      next: () => this.router.navigate(['/citacoes']),
       error: (err) => this.error.set(errorMessage(err)),
     });
   }

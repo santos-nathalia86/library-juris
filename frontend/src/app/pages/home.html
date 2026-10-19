@@ -50,9 +50,11 @@
       @if (category() === 'legislacao') {
         <p class="filter-hint">A fonte oficial localiza normas por número e ano; as demais palavras filtram as ementas.</p>
       }
+      <!-- Meus Documentos desativado temporariamente.
       @if (category() === 'citacoes' && bookCount() === 0) {
         <p class="filter-hint">Você ainda não importou documentos. <a routerLink="/biblioteca">Importar um PDF</a></p>
       }
+      -->
     </div>
     @if (form.controls.q.touched && form.controls.q.invalid) {
       <p class="field-error">Informe ao menos três caracteres.</p>
@@ -112,6 +114,7 @@
     }
   </section>
 
+  <!-- Meus Documentos desativado temporariamente.
   <section class="import-card">
     <span class="bubble"><app-icon name="library" /></span>
     <h2>Importe seus documentos</h2>
@@ -121,4 +124,5 @@
       <small>Formato aceito: PDF | Tamanho máximo: {{ max }} MB</small>
     }
   </section>
+  -->
 </div>
