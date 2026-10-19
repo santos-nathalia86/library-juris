@@ -1,0 +1,141 @@
+<header class="page-head">
+  <span class="bubble"><app-icon name="file" [size]="26" /></span>
+  <div>
+    <h1>Meus Documentos</h1>
+    <p class="lead">
+      Importe PDFs de livros e documentos jurídicos que você tem autorização para usar. Os arquivos ficam apenas neste
+      computador.
+    </p>
+  </div>
+</header>
+
+<form class="search-panel upload-panel" [formGroup]="form" (ngSubmit)="upload(fileInput)">
+  <label class="dropzone" [class.has-file]="file.value">
+    <input #fileInput type="file" accept="application/pdf,.pdf" (change)="pick($event)" aria-label="Arquivo PDF" />
+    <span class="bubble"><app-icon name="upload" /></span>
+    @if (file.value; as chosen) {
+      <strong>{{ chosen.name }}</strong>
+      <small>{{ fileSize(chosen.size) }} · clique para trocar o arquivo</small>
+    } @else {
+      <strong>Escolha um PDF ou arraste o arquivo para cá</strong>
+      <small>Formato aceito: PDF | Tamanho máximo: {{ maxMb() }} MB</small>
+    }
+  </label>
+  <div class="upload-actions">
+    <label class="check">
+      <input type="checkbox" formControlName="authorized" />
+      Tenho autorização para utilizar este documento.
+    </label>
+    <button type="submit" class="btn primary" [disabled]="progress() !== null">
+      <app-icon name="upload" [size]="18" /> Importar PDF
+    </button>
+  </div>
+
+  @if (file.touched && file.hasError('required')) {
+    <p class="field-error">Selecione um arquivo PDF.</p>
+  }
+  @if (file.hasError('type')) {
+    <p class="field-error">Apenas arquivos .pdf são aceitos.</p>
+  }
+  @if (file.hasError('size')) {
+    <p class="field-error">O arquivo excede o limite de {{ maxMb() }} MB.</p>
+  }
+  @if (authorized.touched && authorized.invalid) {
+    <p class="field-error">Confirme que você tem autorização para usar o documento.</p>
+  }
+  @if (progress() !== null) {
+    <div class="progress" role="status">
+      <progress max="100" [value]="progress()"></progress>
+      <span>{{ processing() ? 'Extraindo texto e identificando páginas…' : 'Enviando… ' + progress() + '%' }}</span>
+    </div>
+  }
+</form>
+
+@if (error()) {
+  <p class="alert error">
+    {{ error() }}
+    @if (duplicateId(); as id) {
+      <a [routerLink]="['/biblioteca', id]">Abrir o livro já importado</a>
+    }
+  </p>
+}
+
+@if (books(); as list) {
+  @if (list.length === 0) {
+    <section>
+      <h2 class="section-title">O que acontece na importação</h2>
+      <div class="quick">
+        <article class="quick-card static">
+          <span class="bubble"><app-icon name="search" /></span>
+          <strong>Texto e páginas</strong>
+          <span>
+            O texto é extraído página a página e o sistema identifica a numeração impressa do livro, que costuma
+            diferir da página do arquivo.
+          </span>
+        </article>
+        <article class="quick-card static">
+          <span class="bubble"><app-icon name="book" /></span>
+          <strong>Dados bibliográficos</strong>
+          <span>
+            Autor, título, edição, editora, ano e ISBN são sugeridos a partir da ficha catalográfica e da folha de
+            rosto. Você confere e confirma.
+          </span>
+        </article>
+        <article class="quick-card static">
+          <span class="bubble"><app-icon name="file" /></span>
+          <strong>Fica no seu computador</strong>
+          <span>
+            O PDF é guardado na pasta <code>storage/</code> do projeto e não é enviado a nenhum serviço. PDFs
+            digitalizados, sem texto, não são pesquisáveis.
+          </span>
+        </article>
+      </div>
+    </section>
+  } @else {
+    <h2 class="section-title">{{ list.length }} documento(s) importado(s)</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Autor</th>
+            <th>Ano</th>
+            <th>Edição</th>
+            <th>Editora</th>
+            <th>Páginas</th>
+            <th>Incluído em</th>
+            <th>Dados</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (book of list; track book.id) {
+            <tr>
+              <td>
+                <a [routerLink]="['/biblioteca', book.id]">{{ book.title ?? notIdentified }}</a>
+                <span class="hint block">{{ book.original_filename }} · {{ fileSize(book.size_bytes) }}</span>
+              </td>
+              <td [class.absent]="!book.author">{{ book.author ?? notIdentified }}</td>
+              <td [class.absent]="!book.year">{{ book.year ?? notIdentified }}</td>
+              <td [class.absent]="!book.edition">{{ book.edition ?? notIdentified }}</td>
+              <td [class.absent]="!book.publisher">{{ book.publisher ?? notIdentified }}</td>
+              <td>
+                {{ book.page_count }}
+                @if (book.text_page_count === 0) {
+                  <span class="chip warn">sem texto</span>
+                }
+              </td>
+              <td>{{ book.imported_at | date: 'dd/MM/yyyy' }}</td>
+              <td>
+                @if (pending(book) === 0) {
+                  <span class="chip ok">confirmados</span>
+                } @else {
+                  <a class="chip" [routerLink]="['/biblioteca', book.id]">{{ pending(book) }} a confirmar</a>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

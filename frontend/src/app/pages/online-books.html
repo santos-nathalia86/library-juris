@@ -1,0 +1,222 @@
+<header class="page-head">
+  <span class="bubble"><app-icon name="library" [size]="26" /></span>
+  <div>
+    <h1>Livros e Doutrina</h1>
+    <p class="lead">
+      Procure obras jurídicas em acervos on-line. A busca indica <strong>em quais obras</strong> o termo aparece; para
+      ver o trecho com a página, importe o PDF.
+    </p>
+  </div>
+</header>
+
+<form class="search-panel hero-search" [formGroup]="form" (ngSubmit)="search(1)">
+  <div class="search-box">
+    <app-icon name="search" />
+    <input type="search" formControlName="q" autocomplete="off" aria-label="Palavra, expressão ou conceito" placeholder='Ex: "boa-fé objetiva"' />
+    <button type="submit" class="btn primary" [disabled]="loading()">
+      {{ loading() ? 'Consultando…' : 'Pesquisar' }} <app-icon name="arrow" [size]="18" />
+    </button>
+  </div>
+  <div class="filters">
+    <label class="filter">
+      <app-icon name="library" />
+      <span>
+        <small>Acervo</small>
+        <select formControlName="fonte">
+          <option value="bdjur">BDJur — biblioteca digital do STJ</option>
+          <option value="openalex">OpenAlex — livros em acesso aberto</option>
+          @if (googleEnabled()) {
+            <option value="google">Google Livros — trechos de obras protegidas</option>
+          }
+        </select>
+      </span>
+    </label>
+    @if (form.controls.fonte.value === 'bdjur') {
+      <label class="filter">
+        <app-icon name="grid" />
+        <span>
+          <small>Tipo de documento</small>
+          <select formControlName="tipo">
+            <option value="">Todos</option>
+            @for (type of types(); track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+        </span>
+      </label>
+    } @else {
+      <label class="filter toggle">
+        <input type="checkbox" formControlName="soDireito" />
+        <span>
+          <small>Assunto</small>
+          <b>Apenas obras de Direito</b>
+        </span>
+      </label>
+    }
+  </div>
+  @if (form.controls.q.touched && form.controls.q.invalid) {
+    <p class="field-error">Informe ao menos três caracteres.</p>
+  }
+</form>
+
+@if (error()) {
+  <p class="alert error">{{ error() }}</p>
+}
+
+@if (!result() && !loading()) {
+  <section>
+    <h2 class="section-title">Experimente</h2>
+    <div class="chips">
+      @for (example of examples; track example) {
+        <button type="button" class="chip-button" (click)="tryExample(example)">{{ example }}</button>
+      }
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">O que cada acervo entrega</h2>
+    <div class="quick">
+      <article class="quick-card static">
+        <span class="bubble"><app-icon name="landmark" /></span>
+        <strong>BDJur (STJ)</strong>
+        <span>
+          Acervo jurídico oficial: livros, capítulos, artigos e trabalhos acadêmicos. Os itens de acesso aberto podem
+          ser importados, e aí você vê o trecho com a página.
+        </span>
+      </article>
+      <article class="quick-card static">
+        <span class="bubble"><app-icon name="book" /></span>
+        <strong>OpenAlex</strong>
+        <span>
+          Livros e capítulos acadêmicos em acesso aberto, de editoras e repositórios universitários. Nem toda obra traz
+          o endereço direto do PDF.
+        </span>
+      </article>
+      <article class="quick-card static">
+        <span class="bubble"><app-icon name="quote" /></span>
+        <strong>Google Livros</strong>
+        @if (googleEnabled()) {
+          <span>
+            Livros comerciais das editoras. Mostra um trecho curto, sem a página, e a referência da obra; o texto
+            completo é protegido e não pode ser importado.
+          </span>
+        } @else {
+          <span>Desativado: exige uma chave da Books API em <code>backend/.env</code> (veja o README).</span>
+        }
+      </article>
+    </div>
+    <p class="note below">
+      Use aspas para expressão exata. Só aparecem obras que os acervos disponibilizam legalmente.
+    </p>
+  </section>
+}
+
+@if (result(); as data) {
+  <section class="results" aria-live="polite">
+    <p class="source-note"><strong>{{ data.source }}.</strong> {{ data.source_note }}</p>
+
+    @if (data.error) {
+      <p class="alert error">{{ data.error }} Nenhum resultado foi obtido; use os links abaixo para pesquisar no site.</p>
+    } @else if (data.items.length === 0) {
+      <p class="alert">Nenhuma obra encontrada para “{{ data.query }}” neste acervo.</p>
+    } @else {
+      <p class="count">{{ data.total }} obra(s) encontrada(s) — página {{ data.page }}.</p>
+
+      @for (book of data.items; track $index) {
+        <article class="card">
+          <h3>{{ book.title }}</h3>
+          @if (book.snippet) {
+            <blockquote class="excerpt">{{ book.snippet }}</blockquote>
+            <p class="note warn">
+              Trecho exibido pelo {{ book.source }}, sem indicação de página. Confira no exemplar antes de citar.
+            </p>
+          }
+          <dl class="meta">
+            <div>
+              <dt>Autor</dt>
+              <dd [class.absent]="book.authors.length === 0">{{ book.authors.join('; ') || 'Não identificado' }}</dd>
+            </div>
+            <div>
+              <dt>Ano</dt>
+              <dd [class.absent]="!book.year">{{ book.year ?? 'Não identificado' }}</dd>
+            </div>
+            <div>
+              <dt>Editora ou repositório</dt>
+              <dd [class.absent]="!book.publisher">{{ book.publisher ?? 'Não identificado' }}</dd>
+            </div>
+            <div>
+              <dt>Tipo</dt>
+              <dd>
+                {{ book.doc_type ?? 'Não informado' }}
+                @switch (book.access) {
+                  @case ('aberto') {<span class="chip ok">acesso aberto</span>}
+                  @case ('restrito') {<span class="chip warn">acesso restrito</span>}
+                }
+              </dd>
+            </div>
+            @if (book.isbn) {
+              <div><dt>ISBN</dt><dd>{{ book.isbn }}</dd></div>
+            }
+            @if (book.license) {
+              <div><dt>Licença</dt><dd>{{ book.license }}</dd></div>
+            }
+            @if (book.catalog_citation) {
+              <div class="wide">
+                <dt>Referência informada pelo acervo</dt>
+                <dd>{{ book.catalog_citation }}</dd>
+              </div>
+            }
+          </dl>
+          @if (book.reference; as reference) {
+            <p class="block-label outside">Referência (ABNT NBR 6023)</p>
+            <app-reference-view [reference]="reference" [showCopy]="false" />
+            <p class="note">
+              Montada com os dados do registro do {{ book.source }}, não conferidos no exemplar. Verifique edição e
+              local de publicação antes de usar.
+            </p>
+          }
+          @if (book.note) {
+            <p class="note warn">{{ book.note }}</p>
+          }
+          @if (book.pdf_url && importErrors()[book.pdf_url]; as message) {
+            <p class="alert error">{{ message }}</p>
+          }
+          <div class="actions">
+            @if (book.pdf_url) {
+              <button type="button" class="btn primary" (click)="importAndSearch(book)" [disabled]="importing() !== null">
+                {{ importing() === book.pdf_url ? 'Baixando e lendo o PDF…' : 'Importar e localizar o trecho' + fileSize(book.pdf_size) }}
+              </button>
+            }
+            @if (book.landing_url) {
+              <a class="btn" [href]="book.landing_url" target="_blank" rel="noopener noreferrer">
+                {{ book.snippet ? 'Ver a obra na fonte' : 'Abrir no acervo' }}
+              </a>
+            }
+            @if (book.reference; as reference) {
+              <app-copy-button [text]="reference.text" label="Copiar referência ABNT" />
+            }
+            @if (book.catalog_citation) {
+              <app-copy-button [text]="book.catalog_citation" label="Copiar referência do acervo" />
+            }
+          </div>
+        </article>
+      }
+
+      <div class="pager">
+        <button type="button" class="btn" (click)="search(data.page - 1)" [disabled]="data.page === 1 || loading()">Anterior</button>
+        <span>Página {{ data.page }}</span>
+        <button type="button" class="btn" (click)="search(data.page + 1)" [disabled]="!hasNext(data) || loading()">Próxima</button>
+      </div>
+    }
+
+    <h3 class="links-title">Pesquisa manual em outros acervos</h3>
+    <ul class="links">
+      @for (link of data.manual_links; track link.url) {
+        <li>
+          <a [href]="link.url" target="_blank" rel="noopener noreferrer">{{ link.name }}</a>
+          <span>{{ link.note }}</span>
+        </li>
+      }
+    </ul>
+  </section>
+}

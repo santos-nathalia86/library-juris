@@ -1,0 +1,243 @@
+<header class="page-head">
+  <span class="bubble"><app-icon name="quote" [size]="26" /></span>
+  <div>
+    <h1>Citações</h1>
+    <p class="lead">
+      Pesquise palavras, expressões e conceitos nos documentos que você importou. Cada resultado traz o trecho, a
+      página e a citação pronta no padrão ABNT.
+    </p>
+  </div>
+</header>
+
+<form class="search-panel hero-search" [formGroup]="form" (ngSubmit)="search()">
+  <div class="search-box">
+    <app-icon name="search" />
+    <input type="search" formControlName="q" autocomplete="off" aria-label="Palavra, expressão ou conceito" placeholder="Ex: boa-fé objetiva" />
+    <button type="submit" class="btn primary" [disabled]="loading()">
+      {{ loading() ? 'Pesquisando…' : 'Pesquisar' }} <app-icon name="arrow" [size]="18" />
+    </button>
+  </div>
+  <div class="filters">
+    <label class="filter">
+      <app-icon name="file" />
+      <span>
+        <small>Documento</small>
+        <select formControlName="bookId">
+          <option [ngValue]="null">Todos os documentos</option>
+          @for (book of books(); track book.id) {
+            <option [ngValue]="book.id">{{ bookTitle(book) }}</option>
+          }
+        </select>
+      </span>
+    </label>
+    <label class="filter">
+      <app-icon name="quote" />
+      <span>
+        <small>Como pesquisar</small>
+        <select formControlName="mode">
+          <option value="frase">Expressão exata</option>
+          <option value="todas">Todas as palavras na página</option>
+          <option value="qualquer">Qualquer das palavras</option>
+        </select>
+      </span>
+    </label>
+  </div>
+  @if (form.controls.q.touched && form.controls.q.invalid) {
+    <p class="field-error">Informe ao menos dois caracteres.</p>
+  }
+</form>
+
+@if (books().length === 0 && !error() && !result()) {
+  <p class="alert">
+    Você ainda não importou documentos. <a routerLink="/biblioteca">Importe um PDF</a> ou procure obras de acesso
+    aberto em <a routerLink="/livros-online">Livros e Doutrina</a> para começar a pesquisar.
+  </p>
+}
+@if (error()) {
+  <p class="alert error">{{ error() }}</p>
+}
+
+@if (result(); as data) {
+  <section class="results" aria-live="polite">
+    @if (data.total_pages === 0) {
+      <p class="alert">
+        Nenhuma ocorrência de “{{ data.query }}” nos documentos importados. O JurisFind só mostra trechos que
+        existem nos PDFs da biblioteca.
+      </p>
+    } @else {
+      <p class="count">
+        {{ data.total_pages }} página(s) com ocorrências de “{{ data.query }}” — {{ occurrences().length }} trecho(s) exibido(s).
+      </p>
+    }
+
+    @for (item of occurrences(); track $index) {
+      <article class="card">
+        <blockquote class="excerpt">
+          @if (item.truncated_start) {<span class="ellipsis">[...] </span>}
+          @for (part of segments(item); track $index) {
+            @if (part.hit) {<mark>{{ part.text }}</mark>} @else {<span>{{ part.text }}</span>}
+          }
+          @if (item.truncated_end) {<span class="ellipsis"> [...]</span>}
+        </blockquote>
+
+        <dl class="meta">
+          <div>
+            <dt>Autor</dt>
+            <dd [class.absent]="item.author === notIdentified">
+              {{ item.author }}
+              @if (suggested(item, 'author')) {<span class="chip">sugerido</span>}
+            </dd>
+          </div>
+          <div>
+            <dt>Livro</dt>
+            <dd [class.absent]="item.title === notIdentified">
+              {{ fullTitle(item) }}
+              @if (suggested(item, 'title')) {<span class="chip">sugerido</span>}
+            </dd>
+          </div>
+          <div>
+            <dt>Ano</dt>
+            <dd [class.absent]="item.year === notIdentified">
+              {{ item.year }}
+              @if (suggested(item, 'year')) {<span class="chip">sugerido</span>}
+            </dd>
+          </div>
+          <div>
+            <dt>Edição</dt>
+            <dd [class.absent]="item.edition === notIdentified">
+              {{ item.edition }}
+              @if (suggested(item, 'edition')) {<span class="chip">sugerido</span>}
+            </dd>
+          </div>
+          <div>
+            <dt>Editora</dt>
+            <dd [class.absent]="item.publisher === notIdentified">
+              {{ item.publisher }}
+              @if (suggested(item, 'publisher')) {<span class="chip">sugerido</span>}
+            </dd>
+          </div>
+          @if (item.isbn) {
+            <div>
+              <dt>ISBN</dt>
+              <dd>
+                {{ item.isbn }}
+                @if (suggested(item, 'isbn')) {<span class="chip">sugerido</span>}
+              </dd>
+            </div>
+          }
+          <div>
+            @switch (item.printed_page_source) {
+              @case ('impressa') {
+                <dt>Página impressa no livro</dt>
+                <dd><strong>{{ item.printed_page }}</strong></dd>
+              }
+              @case ('inferida') {
+                <dt>Página impressa (deduzida)</dt>
+                <dd>
+                  {{ item.printed_page }}
+                  <span class="hint">sem número visível nesta página; deduzida das páginas vizinhas — confira no PDF</span>
+                </dd>
+              }
+              @case ('rotulo_pdf') {
+                <dt>Rótulo de página do arquivo</dt>
+                <dd>
+                  {{ item.printed_page }}
+                  <span class="hint">informado pelo PDF; pode não coincidir com a paginação impressa</span>
+                </dd>
+              }
+              @default {
+                <dt>Página impressa no livro</dt>
+                <dd class="absent">Não identificada</dd>
+              }
+            }
+          </div>
+          <div>
+            <dt>Página do arquivo PDF</dt>
+            <dd>{{ item.pdf_page }}</dd>
+          </div>
+          @if (item.chapter) {
+            <div class="wide">
+              <dt>Capítulo ou seção</dt>
+              <dd>{{ item.chapter }}</dd>
+            </div>
+          }
+          <div class="wide">
+            <dt>Arquivo de origem</dt>
+            <dd>{{ item.original_filename }} <span class="hint">incluído em {{ item.imported_at | date: 'dd/MM/yyyy' }}</span></dd>
+          </div>
+        </dl>
+
+        <div class="reference">
+          <p class="block-label">Citação direta (ABNT NBR 10520)</p>
+          <p class="reference-text">{{ item.citation.text }}</p>
+          @if (item.citation.long) {
+            <p class="note">
+              Citação longa (mais de três linhas): no trabalho, vai em parágrafo próprio com recuo de 4 cm, letra
+              menor e sem aspas.
+            </p>
+          }
+          @if (item.citation.warnings.length > 0) {
+            <p class="note warn">Atenção: {{ item.citation.warnings.join('; ') }}.</p>
+          }
+        </div>
+
+        <p class="block-label outside">Referência (ABNT NBR 6023)</p>
+        <app-reference-view [reference]="item.reference" [showCopy]="false" />
+
+        <div class="actions">
+          <app-copy-button [text]="item.citation.text" label="Copiar citação ABNT" />
+          <app-copy-button [text]="item.reference.text" label="Copiar referência" />
+          <app-copy-button [text]="excerptToCopy(item)" label="Copiar só o trecho" />
+          <a class="btn" [href]="fileUrl(item)" target="_blank" rel="noopener">Abrir PDF nesta página</a>
+          <a class="btn" [routerLink]="['/biblioteca', item.book_id]">Revisar dados do livro</a>
+        </div>
+      </article>
+    }
+
+    @if (hasMore()) {
+      <button type="button" class="btn" (click)="more()" [disabled]="loading()">
+        {{ loading() ? 'Carregando…' : 'Carregar mais páginas' }}
+      </button>
+    }
+  </section>
+}
+
+@if (!result() && !loading()) {
+  @if (history().length > 0) {
+    <section>
+      <h2 class="section-title">Pesquisas recentes</h2>
+      <div class="chips">
+        @for (log of history(); track log.id) {
+          <button type="button" class="chip-button" (click)="repeat(log)">{{ log.query }}</button>
+        }
+      </div>
+    </section>
+  }
+
+  <section>
+    <h2 class="section-title">O que você recebe em cada resultado</h2>
+    <div class="quick">
+      <article class="quick-card static">
+        <span class="bubble"><app-icon name="file" /></span>
+        <strong>Trecho com a página</strong>
+        <span>
+          O texto como está no documento, com a página impressa do livro e a página do arquivo PDF mostradas
+          separadamente.
+        </span>
+      </article>
+      <article class="quick-card static">
+        <span class="bubble"><app-icon name="quote" /></span>
+        <strong>Citação e referência ABNT</strong>
+        <span>
+          Citação direta com a chamada (Autor, ano, p.) e a referência completa, prontas para copiar. Usam só os dados
+          que você confirmou na ficha do documento.
+        </span>
+      </article>
+      <article class="quick-card static">
+        <span class="bubble"><app-icon name="search" /></span>
+        <strong>Conferência na fonte</strong>
+        <span>O botão “Abrir PDF nesta página” leva ao ponto exato do documento, para você conferir antes de citar.</span>
+      </article>
+    </div>
+  </section>
+}

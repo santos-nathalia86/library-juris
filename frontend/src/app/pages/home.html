@@ -1,0 +1,124 @@
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">JurisFind</p>
+    <h1>Encontre o que você precisa <br />para <em>fundamentar sua tese.</em></h1>
+    <p class="lead">
+      Pesquise nos seus documentos, em livros e doutrina de acesso aberto, na jurisprudência e na legislação — sempre
+      com a fonte e a página para conferir.
+    </p>
+  </div>
+  <svg class="hero-art" viewBox="0 0 200 220" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M100 24v168M62 200h76M40 56h120M100 24a8 8 0 1 0 0-16a8 8 0 0 0 0 16z" />
+    <path d="M40 56 14 122a26 14 0 0 0 52 0L40 56zM160 56l-26 66a26 14 0 0 0 52 0L160 56z" />
+  </svg>
+
+  <form class="hero-search" [formGroup]="form" (ngSubmit)="search()">
+    <div class="search-box">
+      <app-icon name="search" />
+      <input
+        type="search" formControlName="q" autocomplete="off" aria-label="Termo de pesquisa"
+        [placeholder]="category() === 'legislacao' ? 'Ex: lei 8078 de 1990 consumidor' : 'Ex: responsabilidade civil por erro em registro imobiliário'"
+      />
+      <button type="submit" class="btn primary">Pesquisar <app-icon name="arrow" [size]="18" /></button>
+    </div>
+    <div class="filters">
+      <label class="filter">
+        <app-icon name="grid" />
+        <span>
+          <small>Categoria</small>
+          <select formControlName="category" (change)="changeCategory()">
+            <option value="citacoes">Meus documentos</option>
+            <option value="livros_online">Livros e doutrina</option>
+            <option value="jurisprudencia">Jurisprudência</option>
+            <option value="legislacao">Legislação</option>
+          </select>
+        </span>
+      </label>
+      @if (option().items.length > 0) {
+        <label class="filter">
+          <app-icon [name]="category() === 'jurisprudencia' ? 'landmark' : category() === 'livros_online' ? 'library' : 'quote'" />
+          <span>
+            <small>{{ option().label }}</small>
+            <select formControlName="option">
+              @for (item of option().items; track item[0]) {
+                <option [value]="item[0]">{{ item[1] }}</option>
+              }
+            </select>
+          </span>
+        </label>
+      }
+      @if (category() === 'legislacao') {
+        <p class="filter-hint">A fonte oficial localiza normas por número e ano; as demais palavras filtram as ementas.</p>
+      }
+      @if (category() === 'citacoes' && bookCount() === 0) {
+        <p class="filter-hint">Você ainda não importou documentos. <a routerLink="/biblioteca">Importar um PDF</a></p>
+      }
+    </div>
+    @if (form.controls.q.touched && form.controls.q.invalid) {
+      <p class="field-error">Informe ao menos três caracteres.</p>
+    }
+  </form>
+</section>
+
+<section>
+  <h2 class="section-title">Acesso rápido</h2>
+  <div class="quick">
+    <a class="quick-card" routerLink="/jurisprudencia">
+      <span class="bubble"><app-icon name="scale" /></span>
+      <strong>Jurisprudência</strong>
+      <span>Acórdãos do TST e processos de outros tribunais no DataJud.</span>
+      <app-icon name="arrow" [size]="18" />
+    </a>
+    <a class="quick-card" routerLink="/legislacao">
+      <span class="bubble"><app-icon name="file" /></span>
+      <strong>Legislação</strong>
+      <span>Leis, decretos e outras normas federais no catálogo do Senado.</span>
+      <app-icon name="arrow" [size]="18" />
+    </a>
+    <a class="quick-card" routerLink="/livros-online">
+      <span class="bubble"><app-icon name="book" /></span>
+      <strong>Doutrina e Livros</strong>
+      <span>Livros, capítulos e artigos jurídicos em acervos on-line.</span>
+      <app-icon name="arrow" [size]="18" />
+    </a>
+    <a class="quick-card" routerLink="/citacoes">
+      <span class="bubble"><app-icon name="quote" /></span>
+      <strong>Meus Documentos</strong>
+      <span>Pesquise nos PDFs que você importou e copie a citação ABNT.</span>
+      <app-icon name="arrow" [size]="18" />
+    </a>
+  </div>
+</section>
+
+<div class="home-bottom">
+  <section class="recent">
+    <header>
+      <app-icon name="clock" />
+      <h2>Pesquisas recentes</h2>
+      <a routerLink="/historico">Ver todas</a>
+    </header>
+    @for (log of recent(); track log.id) {
+      @let target = link(log);
+      <a class="recent-row" [routerLink]="target.path" [queryParams]="target.queryParams">
+        <app-icon name="search" [size]="20" />
+        <span>
+          <strong>{{ log.query }}</strong>
+          <small>{{ kindLabels[log.kind] }} · {{ log.created_at | date: 'dd/MM/yyyy • HH:mm' }}</small>
+        </span>
+        <app-icon name="chevron" [size]="18" />
+      </a>
+    } @empty {
+      <p class="empty">Suas pesquisas aparecerão aqui.</p>
+    }
+  </section>
+
+  <section class="import-card">
+    <span class="bubble"><app-icon name="library" /></span>
+    <h2>Importe seus documentos</h2>
+    <p>Adicione PDFs de livros, artigos e documentos jurídicos para pesquisar trechos e localizar citações com a página.</p>
+    <a class="btn primary" routerLink="/biblioteca"><app-icon name="upload" [size]="18" /> Importar PDF</a>
+    @if (maxMb(); as max) {
+      <small>Formato aceito: PDF | Tamanho máximo: {{ max }} MB</small>
+    }
+  </section>
+</div>

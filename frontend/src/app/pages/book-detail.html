@@ -1,0 +1,128 @@
+<p class="crumb"><a routerLink="/biblioteca">← Meus Documentos</a></p>
+
+@if (error()) {
+  <p class="alert error">{{ error() }}</p>
+}
+
+@if (book(); as b) {
+  <h1>{{ b.title ?? 'Título não identificado' }}</h1>
+
+  <dl class="meta file-meta">
+    <div><dt>Arquivo de origem</dt><dd>{{ b.original_filename }}</dd></div>
+    <div><dt>Incluído na biblioteca em</dt><dd>{{ b.imported_at | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+    <div><dt>Páginas do PDF</dt><dd>{{ b.page_count }} ({{ b.text_page_count }} com texto pesquisável)</dd></div>
+    <div><dt>Tamanho</dt><dd>{{ fileSize(b.size_bytes) }}</dd></div>
+    @if (b.source_url) {
+      <div class="wide">
+        <dt>Obtido de</dt>
+        <dd><a [href]="b.source_url" target="_blank" rel="noopener noreferrer">{{ b.source_url }}</a></dd>
+      </div>
+    }
+    <div class="wide"><dt>Paginação</dt><dd>{{ paginationText() }}</dd></div>
+  </dl>
+
+  @for (warning of warnings(); track warning) {
+    <p class="alert warn">{{ warning }}</p>
+  }
+
+  <section>
+    <h2>Dados bibliográficos</h2>
+    @if (pendingCount() > 0) {
+      <p class="alert warn">
+        {{ pendingCount() }} campo(s) foram preenchidos por sugestão automática e ainda não estão confirmados. Confira
+        com a folha de rosto e a ficha catalográfica, corrija o que for preciso e salve. Só dados confirmados entram
+        na referência bibliográfica.
+      </p>
+    }
+
+    <form class="book-form" [formGroup]="form" (ngSubmit)="save()">
+      @for (field of fields; track field) {
+        <label class="field" [class.wide]="field === 'author' || field === 'title' || field === 'subtitle'">
+          <span>
+            {{ labels[field] }}
+            @switch (state(field)) {
+              @case ('confirmed') {<span class="chip ok">confirmado</span>}
+              @case ('suggested') {<span class="chip">sugerido</span>}
+              @case ('missing') {<span class="chip">confirmado como não identificado</span>}
+              @default {<span class="chip muted">não identificado</span>}
+            }
+          </span>
+          <input type="text" [formControlName]="field" [attr.name]="field" placeholder="Não identificado" autocomplete="off" />
+          @if (hints[field]) {
+            <small>{{ hints[field] }}</small>
+          }
+          @if (origin(field); as text) {
+            <small>
+              {{ text }}
+              @if (b.suggestions[field]?.pdf_page; as page) {
+                <a [href]="fileUrl(page)" target="_blank" rel="noopener">Conferir</a>
+              }
+            </small>
+          }
+          @if (form.controls[field].invalid && form.controls[field].touched) {
+            <small class="field-error">{{ field === 'year' ? 'Use quatro dígitos, ou deixe em branco.' : 'Valor muito longo.' }}</small>
+          }
+        </label>
+      }
+      <div class="actions wide">
+        <button type="submit" class="btn primary" [disabled]="saving()">
+          {{ saving() ? 'Salvando…' : 'Confirmar e salvar dados' }}
+        </button>
+        <a class="btn" [href]="fileUrl()" target="_blank" rel="noopener">Abrir PDF</a>
+        <button type="button" class="btn" (click)="searchOnline()" [disabled]="lookingUp()">
+          {{ lookingUp() ? 'Consultando…' : 'Consultar fontes bibliográficas' }}
+        </button>
+        @if (saved()) {
+          <span class="saved" role="status">Dados salvos e confirmados.</span>
+        }
+      </div>
+      <p class="note wide">
+        Campos deixados em branco são gravados como “Não identificado”. A consulta on-line usa o ISBN do formulário e
+        envia apenas esse número, nunca o conteúdo do livro.
+      </p>
+    </form>
+  </section>
+
+  @if (lookup(); as found) {
+    <section>
+      <h2>Fontes bibliográficas</h2>
+      @for (message of found.errors; track message) {
+        <p class="alert error">{{ message }}</p>
+      }
+      @for (candidate of found.candidates; track $index) {
+        <article class="card">
+          <h3>{{ candidate.source }}</h3>
+          <p class="summary">{{ candidateSummary(candidate) }}</p>
+          <p class="note">
+            Registro externo: confira se corresponde à edição do seu exemplar. Os dados só são gravados depois de
+            “Confirmar e salvar dados”.
+          </p>
+          <div class="actions">
+            <button type="button" class="btn" (click)="apply(candidate)">Usar estes dados no formulário</button>
+          </div>
+        </article>
+      }
+      @if (found.candidates.length === 0 && found.errors.length === 0) {
+        <p class="alert">Sem ISBN no formulário não há consulta automática. Use as fontes abaixo.</p>
+      }
+      <h3 class="links-title">Pesquisa manual</h3>
+      <ul class="links">
+        @for (link of found.manual_links; track link.url) {
+          <li>
+            <a [href]="link.url" target="_blank" rel="noopener noreferrer">{{ link.name }}</a>
+            <span>{{ link.note }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <section>
+    <h2>Referência bibliográfica (ABNT)</h2>
+    <app-reference-view [reference]="b.reference" />
+  </section>
+
+  <section class="danger">
+    <button type="button" class="btn danger" (click)="remove()">Excluir livro da biblioteca</button>
+  </section>
+}

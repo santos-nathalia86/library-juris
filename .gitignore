@@ -1,0 +1,25 @@
+# Armazenamento local: PDFs e banco de dados nunca vão para o Git.
+/storage/*
+!/storage/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Node / Angular
+node_modules/
+/frontend/dist/
+/frontend/.angular/
+
+# Ferramentas baixadas (cloudflared)
+/.tools/
+
+# Ambiente e editores
+.env
+.env.*
+!.env.example
+.idea/
+.DS_Store
